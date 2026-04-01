@@ -1,0 +1,143 @@
+# WoningScout — Full Stack
+#
+# Usage:
+#   docker compose up -d          # start everything
+#   docker compose logs -f api    # watch API logs
+#   docker compose down -v        # tear down + delete volumes
+#
+# Endpoints:
+#   API:        http://localhost:8000/docs
+#   Grafana:    http://localhost:3000  (admin/admin)
+#   Prometheus: http://localhost:9090
+
+services:
+
+  # ── API Server ────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://scout:${DB_PASS:-scout_dev}@db:5432/woningscout
+      REDIS_URL: redis://redis:6379/0
+      MODEL_PATH: /app/models/artifacts
+      FUNDA_API_KEY: ${FUNDA_API_KEY:-}
+      LOG_LEVEL: INFO
+      LOG_FORMAT: console
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+  # ── Pipeline Worker ───────────────────────────────────────
+  pipeline:
+    build:
+      context: .
+      dockerfile: services/pipeline/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://scout:${DB_PASS:-scout_dev}@db:5432/woningscout
+      REDIS_URL: redis://redis:6379/0
+      FUNDA_API_KEY: ${FUNDA_API_KEY:-}
+      SCAN_INTERVAL: ${SCAN_INTERVAL:-300}
+      TARGET_REGIONS: ${TARGET_REGIONS:-amsterdam}
+      LOG_LEVEL: INFO
+    depends_on:
+      - api
+      - db
+      - redis
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+  # ── PostgreSQL ────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: woningscout
+      POSTGRES_USER: scout
+      POSTGRES_PASSWORD: ${DB_PASS:-scout_dev}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scout -d woningscout"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+  # ── Redis ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+  # ── Prometheus ────────────────────────────────────────────
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+  # ── Grafana ───────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/woningscout.json
+    volumes:
+      - ./monitoring/dashboards:/var/lib/grafana/dashboards:ro
+      - ./monitoring/provisioning:/etc/grafana/provisioning:ro
+      - grafanadata:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - woningscout
+
+volumes:
+  pgdata:
+  redisdata:
+  promdata:
+  grafanadata:
+
+networks:
+  woningscout:
+    driver: bridge

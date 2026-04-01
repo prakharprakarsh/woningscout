@@ -1,0 +1,127 @@
+# WoningScout XGBoost Training Configuration
+# Used by: python -m woningscout.train --config configs/xgb_v3.yaml
+
+model:
+  name: xgb_price_v3
+  type: xgboost
+  task: regression
+
+data:
+  # In demo mode, uses data/fixtures/sample_sales.csv
+  train_path: data/train.csv
+  test_path: data/test.csv
+  target_column: sold_price
+  temporal_split:
+    train_end: "2023-09-30"
+    val_start: "2023-10-01"
+    val_end: "2023-12-31"
+    test_start: "2024-01-01"
+
+features:
+  # Must match FEATURE_COLUMNS in agents/prediction.py
+  numerical:
+    - living_area_m2
+    - num_rooms
+    - num_bathrooms
+    - build_year
+    - energy_label_ordinal
+    - lat
+    - lng
+    - dist_to_nearest_station_km
+    - dist_to_centrum_km
+    - dist_to_nearest_school_km
+    - supermarket_count_500m
+    - restaurant_count_1km
+    - green_space_pct_500m
+    - water_body_dist_m
+    - noise_level_estimate
+    - elevation_m
+    - postal_density_per_km2
+    - desc_sentiment_nl
+    - luxury_keyword_count
+    - desc_word_count
+    - unique_selling_points_count
+    - agent_confidence_tone
+    - photo_count
+    - days_on_market_avg_pc4
+    - price_per_m2_pc4_90d
+    - active_listings_pc4
+    - yoy_price_change_pc4
+    - bid_ratio_avg_pc4
+    - sold_above_asking_pct_pc4
+    - inventory_turnover_pc4
+    - avg_income_pc4
+    - population_growth_pc4
+    - mortgage_rate_current
+    - consumer_confidence_idx
+    - housing_shortage_idx_province
+    - market_momentum_30d_pc4
+    - days_since_last_rate_change
+
+  binary:
+    - has_garden
+    - has_balcony
+    - renovation_mentioned
+    - has_english_text
+    - is_school_holiday
+
+  categorical_encoded:
+    - parking_type_enc
+    - property_type_enc
+    - month_listed
+    - day_of_week_listed
+    - new_construction_pc4
+
+hyperparameters:
+  # These are the Optuna-tuned values (200 trials)
+  max_depth: 7
+  learning_rate: 0.038
+  n_estimators: 842
+  reg_alpha: 0.12
+  reg_lambda: 2.8
+  subsample: 0.85
+  colsample_bytree: 0.78
+  min_child_weight: 5
+  gamma: 0.02
+  objective: "reg:squarederror"
+  eval_metric: "rmse"
+  tree_method: "hist"
+  random_state: 42
+
+optuna:
+  enabled: true
+  n_trials: 200
+  timeout_seconds: 3600
+  study_name: woningscout_xgb_tuning
+
+  search_space:
+    max_depth: [3, 10]
+    learning_rate: [0.01, 0.15]
+    n_estimators: [200, 1500]
+    reg_alpha: [0.0, 1.0]
+    reg_lambda: [0.5, 5.0]
+    subsample: [0.6, 1.0]
+    colsample_bytree: [0.5, 1.0]
+    min_child_weight: [1, 10]
+
+evaluation:
+  cross_validation:
+    folds: 5
+    stratify_by: province
+  metrics:
+    - r2
+    - mae
+    - mape
+    - rmse
+  bootstrap_ci:
+    n_iterations: 80
+    alpha: 0.10
+  drift:
+    psi_threshold: 0.12
+    psi_buckets: 10
+
+output:
+  model_path: models/artifacts/xgb_price_v3.json
+  reference_distribution: models/artifacts/reference_distribution.json
+  shap_summary: models/artifacts/shap_summary.json
+  metrics_log: models/artifacts/training_metrics.json

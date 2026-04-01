@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+
+# Data (keep fixtures, ignore large datasets)
+data/*.csv
+data/*.parquet
+data/*.pkl
+!data/fixtures/
+
+# Models (keep config, ignore trained artifacts)
+models/*.joblib
+models/*.xgb
+models/*.index
+models/*.bin
+!models/__init__.py
+!models/schemas.py
+!models/registry.py
+
+# Notebooks checkpoints
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker-compose.override.yml
+
+# Monitoring data
+monitoring/grafana-data/
+monitoring/prometheus-data/
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# mypy
+.mypy_cache/
+
+# ruff
+.ruff_cache/
