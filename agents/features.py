@@ -18,7 +18,7 @@ listings. We have a custom compound splitter for ~200 housing terms.
 
 import math
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from agents.base import BaseAgent
@@ -378,7 +378,7 @@ class FeatureAgent(BaseAgent):
         features["housing_shortage_idx_province"] = 3.8  # North Holland
 
         # ── Temporal (5) ──────────────────────────────────────
-        now = listing.listed_at or datetime.utcnow()
+        now = listing.listed_at or datetime.now(tz=timezone.utc)
         features["month_listed"] = now.month
         features["day_of_week_listed"] = now.weekday()
         features["is_school_holiday"] = int(now.month in (7, 8, 12))  # rough

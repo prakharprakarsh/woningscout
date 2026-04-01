@@ -13,7 +13,7 @@ In demo mode (no FUNDA_API_KEY), we load from data/fixtures/ instead.
 """
 
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -296,7 +296,7 @@ class IngestionAgent(BaseAgent):
 
     async def _execute(self, state: PipelineState) -> PipelineState:
         # Check if we're in a backoff period (rate limit recovery)
-        if state.backoff_until and datetime.utcnow() < state.backoff_until:
+        if state.backoff_until and datetime.now(tz=timezone.utc) < state.backoff_until:
             self.logger.info(
                 "skipping_backoff",
                 backoff_until=state.backoff_until.isoformat(),
@@ -310,7 +310,7 @@ class IngestionAgent(BaseAgent):
                 regions=state.target_regions,
             )
         except FundaRateLimitError:
-            state.backoff_until = datetime.utcnow() + timedelta(minutes=5)
+            state.backoff_until = datetime.now(tz=timezone.utc) + timedelta(minutes=5)
             self.logger.warning("rate_limited", backoff_minutes=5)
             return state
 
@@ -352,7 +352,7 @@ class IngestionAgent(BaseAgent):
 
         # Store listing IDs for downstream agents
         state.new_listing_ids = [l.id for l in valid]
-        state.last_scan_ts = datetime.utcnow()
+        state.last_scan_ts = datetime.now(tz=timezone.utc)
 
         # Stash the raw listings in state for feature agent
         # (In production this would be a DB write + ID list)

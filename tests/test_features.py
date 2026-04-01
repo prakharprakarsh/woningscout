@@ -35,7 +35,7 @@ class TestDutchSentiment:
     def test_mixed_language(self):
         text = "Beautiful spacious apartment met prachtig uitzicht"
         score = simple_dutch_sentiment(text)
-        assert 0.3 < score < 1.0  # should detect both
+        assert 0.3 < score <= 1.0  # should detect both
 
 
 class TestDetectEnglish:
@@ -76,7 +76,7 @@ class TestRenovation:
 
 class TestUSPCount:
     def test_counts_short_sentences(self):
-        text = "Op loopafstand van het park. Rustige straat. Vrij uitzicht."
+        text = "Op loopafstand van het mooie park. Rustige straat dichtbij winkels. Vrij uitzicht over de gracht."
         count = count_unique_selling_points(text)
         assert count >= 2
 

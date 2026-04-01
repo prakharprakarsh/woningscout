@@ -29,6 +29,7 @@ class TestConditionalRouting:
         assert should_alert(state) == "alert"
 
     def test_routes_to_end_when_fair(self):
+        from agents.schemas import ScoredProperty
         state = PipelineState(run_id="test")
         state.scored_properties = [
             ScoredProperty(
@@ -110,6 +111,8 @@ class TestRunPipeline:
     @pytest.mark.asyncio
     async def test_run_pipeline_convenience(self):
         """Test the public run_pipeline() function."""
+        from services.pipeline.orchestrator import _ingestion
+        _ingestion._seen_hashes.clear()
         result = await run_pipeline(regions=["amsterdam"])
 
         assert result.run_id  # should have a run ID

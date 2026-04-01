@@ -7,7 +7,7 @@ but with fictional addresses and prices.
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from agents.schemas import (
     PipelineState,

@@ -21,7 +21,7 @@ The API is intentionally thin — most logic lives in the agents.
 import asyncio
 import time
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import structlog
@@ -51,7 +51,7 @@ class AppState:
         self.last_run_at: Optional[datetime] = None
         self.total_runs: int = 0
         self.is_running: bool = False
-        self.startup_time: datetime = datetime.utcnow()
+        self.startup_time: datetime = datetime.now(tz=timezone.utc)
 
     @property
     def scored_listings(self) -> list[ScoredProperty]:
@@ -162,7 +162,7 @@ class ListingDetail(BaseModel):
 @app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check():
     """Health check endpoint for Docker/k8s probes."""
-    uptime = (datetime.utcnow() - app_state.startup_time).total_seconds()
+    uptime = (datetime.now(tz=timezone.utc) - app_state.startup_time).total_seconds()
     return HealthResponse(
         status="healthy",
         mode="demo" if settings.is_demo_mode else "live",
@@ -219,7 +219,7 @@ async def trigger_pipeline_run(
         try:
             result = await run_pipeline(regions=regions)
             app_state.last_run = result
-            app_state.last_run_at = datetime.utcnow()
+            app_state.last_run_at = datetime.now(tz=timezone.utc)
             app_state.total_runs += 1
         except Exception as e:
             logger.error("pipeline_run_failed_via_api", error=str(e))
@@ -342,8 +342,8 @@ async def get_listing_detail(listing_id: str):
 
 # ── Run on startup (optional auto-scan) ──────────────────────────────
 
-@app.on_event("startup")
-async def run_initial_scan():
+# Moved to lifespan handler
+async def _disabled_initial_scan():
     """Optionally run a pipeline scan on API startup.
 
     In demo mode, this gives us data to serve immediately
@@ -361,7 +361,7 @@ async def run_initial_scan():
             try:
                 result = await run_pipeline()
                 app_state.last_run = result
-                app_state.last_run_at = datetime.utcnow()
+                app_state.last_run_at = datetime.now(tz=timezone.utc)
                 app_state.total_runs += 1
                 logger.info("startup_scan_complete", summary=result.summary)
             except Exception as e:

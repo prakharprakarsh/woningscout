@@ -15,7 +15,7 @@ The alert templates support Dutch and English — users set their
 preferred language in their profile.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -87,7 +87,7 @@ DEMO_USERS = [
         regions=["amsterdam"],
         channels=["log", "telegram"],
         alerts_today=5,  # already at limit — should be skipped
-        last_alert_date=datetime.utcnow().strftime("%Y-%m-%d"),
+        last_alert_date=datetime.now(tz=timezone.utc).strftime("%Y-%m-%d"),
     ),
 ]
 
@@ -258,11 +258,11 @@ class UserRateLimiter:
 
     def __init__(self):
         self._counts: dict[str, int] = {}
-        self._date: str = datetime.utcnow().strftime("%Y-%m-%d")
+        self._date: str = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
 
     def _maybe_reset(self):
         """Reset if it's a new day."""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(tz=timezone.utc).strftime("%Y-%m-%d")
         if today != self._date:
             self._counts.clear()
             self._date = today

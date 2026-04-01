@@ -68,9 +68,11 @@ select = ["E", "F", "I", "N", "W", "UP"]
 testpaths = ["tests"]
 asyncio_mode = "auto"
 addopts = "-v --tb=short"
+filterwarnings = ["ignore::DeprecationWarning:pydantic"]
 
 [tool.mypy]
 python_version = "3.11"
 strict = false
 warn_return_any = true
 warn_unused_configs = true
+

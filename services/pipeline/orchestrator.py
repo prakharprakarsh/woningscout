@@ -21,7 +21,7 @@ LangGraph also gives us:
 
 import asyncio
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 import structlog
@@ -202,7 +202,7 @@ async def run_pipeline(
         mode="demo" if settings.is_demo_mode else "live",
     )
 
-    start = datetime.utcnow()
+    start = datetime.now(tz=timezone.utc)
 
     # Try LangGraph first, fall back to simple pipeline
     graph = build_pipeline()
@@ -218,7 +218,7 @@ async def run_pipeline(
     else:
         result = await run_simple_pipeline(initial_state)
 
-    elapsed = (datetime.utcnow() - start).total_seconds()
+    elapsed = (datetime.now(tz=timezone.utc) - start).total_seconds()
 
     logger.info(
         "pipeline_complete",

@@ -6,7 +6,7 @@ These Pydantic models serve double duty:
 2. Documentation (any new contributor can read these to understand the data flow)
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
@@ -165,7 +165,7 @@ class Comparable(BaseModel):
     def sold_within_days(self) -> int:
         if not self.sold_date:
             return 999
-        return (datetime.utcnow() - self.sold_date).days
+        return (datetime.now(tz=timezone.utc) - self.sold_date).days
 
 
 # ── Scored Property ───────────────────────────────────────────────────
