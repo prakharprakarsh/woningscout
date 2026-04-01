@@ -28,7 +28,7 @@ def setup_logging(level: str = "INFO", fmt: str = "console"):
                 structlog.dev.ConsoleRenderer(colors=True),
             ],
             wrapper_class=structlog.make_filtering_bound_logger(
-                getattr(structlog, level.upper(), structlog.INFO)
+                getattr(__import__("logging"), level.upper(), __import__("logging").INFO)
             ),
         )
     else:
